@@ -37,11 +37,15 @@ app.get('/api', (req, res) => {
 app.use(errorHandler); 
 
 // Database sync and server start
-sequelize.sync({ alter: true }).then(() => { 
-    console.log('Database synced successfully.');
-    
-    // --- Initial Admin User Creation (Seed Block) ---
-    (async () => {
+const startServer = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log('Database connection established successfully.');
+        
+        await sequelize.sync({ alter: true });
+        console.log('Database synced successfully.');
+        
+        // --- Initial Admin User Creation (Seed Block) ---
         try {
             const adminEmail = 'admin@platform.com';
             const adminUser = await User.findOne({ where: { email: adminEmail } });
@@ -51,7 +55,6 @@ sequelize.sync({ alter: true }).then(() => {
                 const hashedPassword = await bcrypt.hash('Admin@123', salt);
                 
                 await User.create({
-                    // Ensure name is long enough (>= 20 chars) to pass validation
                     name: 'Platform System Administrator Global Head of Ops', 
                     email: adminEmail,
                     password: hashedPassword,
@@ -63,11 +66,22 @@ sequelize.sync({ alter: true }).then(() => {
         } catch (error) {
             console.error('Error during Admin Seed Block:', error.message);
         }
-    })();
-    // --------------------------------------------------------
+        // --------------------------------------------------------
 
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        if (process.env.NODE_ENV === 'production') {
+            // For serverless (Vercel), don't start server
+            console.log('Serverless mode - ready for function calls');
+        } else {
+            // For local development, start server
+            app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        }
+    } catch (err) {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+    }
+};
 
-}).catch(err => {
-    console.error('Failed to sync database:', err);
-});
+startServer();
+
+// Export app for Vercel
+module.exports = app;
