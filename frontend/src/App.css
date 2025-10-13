@@ -1,0 +1,19 @@
+/* General Layout & Background */
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Container for content */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Loading State */
+.loading-screen {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2em;
+    color: #007bff;
+}
