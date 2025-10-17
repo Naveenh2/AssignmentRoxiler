@@ -22,9 +22,11 @@ router.get('/stores', normalUserAuth, async (req, res, next) => {
     try {
         // Filtering based on Name or Address
         if (search) {
+            // Sanitize search input to prevent SQL injection
+            const sanitizedSearch = search.replace(/[%_\\]/g, '\\$&');
             where[Op.or] = [
-                { name: { [Op.like]: `%${search}%` } },
-                { address: { [Op.like]: `%${search}%` } }
+                { name: { [Op.like]: `%${sanitizedSearch}%` } },
+                { address: { [Op.like]: `%${sanitizedSearch}%` } }
             ];
         }
 

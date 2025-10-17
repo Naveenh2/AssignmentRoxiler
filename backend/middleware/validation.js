@@ -25,4 +25,13 @@ const validateSignup = [
         .matches(passwordRegex).withMessage('Password must be 8-16 characters, include one uppercase letter, and one special character (!@#$%^&*).'),
 ];
 
-module.exports = { validateSignup };
+/**
+ * Validation rules for password update.
+ */
+const validatePasswordUpdate = [
+    // New Password: 8-16 characters, uppercase, and special character.
+    body('newPassword')
+        .matches(passwordRegex).withMessage('New password must be 8-16 characters, include one uppercase letter, and one special character (!@#$%^&*).'),
+];
+
+module.exports = { validateSignup, validatePasswordUpdate };
