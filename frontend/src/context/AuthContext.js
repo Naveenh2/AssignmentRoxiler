@@ -4,6 +4,18 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+// Helper function to check if JWT token is expired
+const isTokenExpired = (token) => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Date.now() / 1000;
+        return payload.exp < currentTime;
+    } catch (error) {
+        // If token is malformed, consider it expired
+        return true;
+    }
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -13,7 +25,15 @@ export const AuthProvider = ({ children }) => {
         const role = localStorage.getItem('role');
         
         if (token && role) {
-            setUser({ token, role });
+            // Validate token before setting user
+            if (isTokenExpired(token)) {
+                // Token is expired, clear storage
+                localStorage.removeItem('token');
+                localStorage.removeItem('role');
+                setUser(null);
+            } else {
+                setUser({ token, role });
+            }
         }
         setLoading(false);
     }, []);

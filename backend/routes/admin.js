@@ -25,9 +25,11 @@ const applyListQuery = (model, query) => {
 
     // 2. Search by Name, Email, or Address
     if (search) {
+        // Sanitize search input to prevent SQL injection
+        const sanitizedSearch = search.replace(/[%_\\]/g, '\\$&');
         const searchFields = ['name', 'email', 'address'];
         options.where[Op.or] = searchFields.map(field => ({
-            [field]: { [Op.like]: `%${search}%` }
+            [field]: { [Op.like]: `%${sanitizedSearch}%` }
         }));
     }
     

@@ -8,7 +8,7 @@ const { validationResult } = require('express-validator');
 // Adjust the path if your models folder is not directly one level up (../)
 const { User } = require('../models/index'); 
 const { protect } = require('../middleware/auth');
-const { validateSignup } = require('../middleware/validation');
+const { validateSignup, validatePasswordUpdate } = require('../middleware/validation');
 // ---
 
 // Helper to generate JWT
@@ -81,12 +81,17 @@ router.post('/login', async (req, res, next) => {
 
 // @route   PUT /api/auth/update-password
 // @desc    Update password for logged in user
-router.put('/update-password', protect, async (req, res, next) => {
+router.put('/update-password', protect, validatePasswordUpdate, async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
     const { newPassword } = req.body;
-    // NOTE: Password validation should ideally be repeated here for newPassword
     
     try {
         const user = await User.findByPk(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
         
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
