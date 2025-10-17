@@ -10,18 +10,47 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        const role = localStorage.getItem('role');
-        
-        if (token && role) {
-            setUser({ token, role });
-        }
-        setLoading(false);
+        const init = async () => {
+            setLoading(true);
+            if (token) {
+                try {
+                    const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch profile');
+                    const data = await res.json();
+                    setUser({ token, ...data });
+                } catch (err) {
+                    // If profile fetch fails, clear local token
+                    localStorage.removeItem('token');
+                    setUser(null);
+                }
+            } else {
+                setUser(null);
+            }
+            setLoading(false);
+        };
+        init();
     }, []);
 
-    const login = (token, role) => {
+    const login = async (token, role) => {
         localStorage.setItem('token', token);
-        localStorage.setItem('role', role);
-        setUser({ token, role });
+        setLoading(true);
+        try {
+            const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch profile');
+            const data = await res.json();
+            setUser({ token, ...data });
+            setLoading(false);
+            return data;
+        } catch (err) {
+            // fallback: set minimal user object with role
+            setUser({ token, role });
+            setLoading(false);
+            return { role };
+        }
     };
 
     const logout = () => {

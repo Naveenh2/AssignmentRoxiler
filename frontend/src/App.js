@@ -8,14 +8,18 @@ import Signup from './components/Auth/Signup';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import StoreList from './components/User/StoreList';
 import OwnerDashboard from './components/Owner/OwnerDashboard';
+import AddRedirect from './components/AddRedirect';
 import PasswordUpdate from './pages/PasswordUpdate';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'; 
 
 const HomeRedirect = () => {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
+    // While AuthContext is initializing (fetching profile), show a loader
+    if (loading) return <div className="text-center mt-5">Loading...</div>;
+
     if (!user) return <Navigate to="/login" replace />;
-    
+
     // Redirect based on role after login
     switch (user.role) {
         case 'Admin': return <Navigate to="/admin/dashboard" replace />;
@@ -45,6 +49,7 @@ const App = () => {
                         <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
                             <Route path="/admin/dashboard" element={<AdminDashboard />} />
                         </Route>
+                        <Route path="/add" element={<AddRedirect />} />
                         <Route element={<ProtectedRoute allowedRoles={['StoreOwner']} />}>
                             <Route path="/owner/dashboard" element={<OwnerDashboard />} />
                         </Route>

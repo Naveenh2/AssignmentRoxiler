@@ -16,8 +16,8 @@ const Login = () => { // Ensure this arrow function definition is clean
         try {
             const res = await api.post('/auth/login', { email, password });
             
-            // On success, store token and redirect
-            login(res.data.token, res.data.role);
+            // On success, store token and wait for profile fetch, then redirect
+            await login(res.data.token, res.data.role);
             navigate('/'); 
 
         } catch (err) {

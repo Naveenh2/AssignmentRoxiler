@@ -20,6 +20,7 @@ const UserStoreTable = ({ type }) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ search: '', sortBy: 'id', order: 'ASC', filterRole: '' });
+    const [selectedDetail, setSelectedDetail] = useState(null);
     
     const tableHeaders = headersConfig[type];
 
@@ -41,6 +42,16 @@ const UserStoreTable = ({ type }) => {
         fetchData();
     }, [fetchData]);
 
+    const handleRowClick = async (id) => {
+        try {
+            const res = await api.get(`/admin/users/${id}`);
+            setSelectedDetail(res.data);
+        } catch (err) {
+            console.error('Failed to fetch detail', err);
+            setSelectedDetail(null);
+        }
+    };
+
     const handleSort = (key) => {
         const newOrder = filters.sortBy === key && filters.order === 'ASC' ? 'DESC' : 'ASC';
         setFilters(prev => ({ ...prev, sortBy: key, order: newOrder }));
@@ -55,6 +66,24 @@ const UserStoreTable = ({ type }) => {
 
     return (
         <div className="table-responsive">
+            <div className="row mb-3 g-2">
+                <div className="col-md-4">
+                    <input className="form-control" placeholder="Search name/email/address" value={filters.search} onChange={e => setFilters(prev => ({...prev, search: e.target.value}))} />
+                </div>
+                {type === 'users' && (
+                    <div className="col-md-3">
+                        <select className="form-control" value={filters.filterRole} onChange={e => setFilters(prev => ({...prev, filterRole: e.target.value}))}>
+                            <option value="">All roles</option>
+                            <option value="Admin">Admin</option>
+                            <option value="NormalUser">NormalUser</option>
+                            <option value="StoreOwner">StoreOwner</option>
+                        </select>
+                    </div>
+                )}
+                <div className="col-md-2">
+                    <button className="btn btn-secondary" onClick={() => setFilters(prev => ({...prev, search: ''}))}>Clear</button>
+                </div>
+            </div>
             <table className="table table-striped table-hover">
                 <thead>
                     <tr>
@@ -67,7 +96,7 @@ const UserStoreTable = ({ type }) => {
                 </thead>
                 <tbody>
                     {data.map((item) => (
-                        <tr key={item.id}>
+                        <tr key={item.id} onClick={() => handleRowClick(item.id)} style={{ cursor: 'pointer' }}>
                             {tableHeaders.map(header => (
                                 <td key={header.key}>
                                     {header.key === 'storeRating' && item.role !== 'StoreOwner' 
@@ -80,6 +109,18 @@ const UserStoreTable = ({ type }) => {
                 </tbody>
             </table>
             {data.length === 0 && <p className="text-center text-muted">No {type} found.</p>}
+                {selectedDetail && (
+                    <div className="card mt-3 p-3">
+                        <h5>Details for {selectedDetail.name}</h5>
+                        <p><strong>Email:</strong> {selectedDetail.email}</p>
+                        <p><strong>Address:</strong> {selectedDetail.address}</p>
+                        <p><strong>Role:</strong> {selectedDetail.role}</p>
+                        {selectedDetail.role === 'StoreOwner' && selectedDetail.storeRating && (
+                            <p><strong>Store Rating:</strong> {selectedDetail.storeRating}</p>
+                        )}
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setSelectedDetail(null)}>Close</button>
+                    </div>
+                )}
         </div>
     );
 };
