@@ -8,9 +8,11 @@ const User = sequelize.define('User', {
         autoIncrement: true
     },
     name: { 
-        type: DataTypes.STRING, 
-        allowNull: false 
-        // Validation check for min 20 / max 60 should be enforced here or primarily via express-validator
+        type: DataTypes.STRING(60), 
+        allowNull: false,
+        validate: {
+            len: { args: [20, 60], msg: 'Name must be between 20 and 60 characters.' }
+        }
     },
     email: { 
         type: DataTypes.STRING, 
@@ -24,8 +26,11 @@ const User = sequelize.define('User', {
         // Stores the hashed password (bcrypt hash is usually 60 chars)
     },
     address: { 
-        type: DataTypes.STRING, 
-        allowNull: false 
+        type: DataTypes.STRING(400), 
+        allowNull: false,
+        validate: {
+            len: { args: [0, 400], msg: 'Address cannot exceed 400 characters.' }
+        }
     },
     role: {
         type: DataTypes.ENUM('Admin', 'NormalUser', 'StoreOwner'),

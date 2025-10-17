@@ -79,6 +79,19 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
+// @route   GET /api/auth/me
+// @desc    Return current logged-in user's details (protected)
+router.get('/me', protect, async (req, res, next) => {
+    try {
+        const user = await User.findByPk(req.user.id, { attributes: { exclude: ['password'] } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.json({ id: user.id, name: user.name, email: user.email, address: user.address, role: user.role });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // @route   PUT /api/auth/update-password
 // @desc    Update password for logged in user
 router.put('/update-password', protect, async (req, res, next) => {

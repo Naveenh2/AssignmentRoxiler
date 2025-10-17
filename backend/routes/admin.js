@@ -34,6 +34,10 @@ const applyListQuery = (model, query) => {
     return options;
 };
 
+// Allowed sort fields for security and predictability
+const ALLOWED_USER_SORT_FIELDS = ['id', 'name', 'email', 'address', 'role'];
+const ALLOWED_STORE_SORT_FIELDS = ['id', 'name', 'email', 'address'];
+
 // -------------------------------------------------------------
 // 1. DASHBOARD ANALYTICS
 // -------------------------------------------------------------
@@ -120,6 +124,36 @@ router.get('/users', adminAuth, async (req, res, next) => {
         }));
 
         res.json(usersWithDetails);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// @route   GET /api/admin/users/:id
+// @desc    Get details of a specific user
+router.get('/users/:id', adminAuth, async (req, res, next) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const user = await User.findByPk(userId, {
+            attributes: { exclude: ['password'] },
+            include: [{ model: Store, as: 'OwnedStore', attributes: ['id', 'name'] }]
+        });
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        let details = user.toJSON();
+
+        // If store owner, add average rating for the store
+        if (details.role === 'StoreOwner' && details.OwnedStore) {
+            const avgRatingResult = await Rating.findOne({
+                attributes: [[sequelize.fn('AVG', sequelize.col('rating')), 'averageRating']],
+                where: { StoreId: details.OwnedStore.id },
+                raw: true,
+            });
+            details.storeRating = parseFloat(avgRatingResult.averageRating || 0).toFixed(2);
+        }
+
+        res.json(details);
     } catch (err) {
         next(err);
     }
