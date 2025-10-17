@@ -1,46 +1,65 @@
+
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
 import UserStoreTable from './UserStoreTable';
-// import { useState, useEffect } from 'react';
-
-// Simple small-form components for Admin add actions are included inline below
 
 const AdminDashboard = () => {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [ownerOptions, setOwnerOptions] = useState([]);
+    const [stores, setStores] = useState([]);
 
     // Form state for creating user
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', address: '', role: 'NormalUser' });
+    // Form state for creating store
     const [newStore, setNewStore] = useState({ name: '', email: '', address: '', ownerId: '' });
+    // Form state for rating a store
+    const [newRating, setNewRating] = useState({ storeId: '', rating: '' });
 
-    const fetchOwners = async () => {
+    const fetchAdminData = async () => {
         try {
-            // Fetch users and filter StoreOwners for owner select
-            const res = await api.get('/admin/users');
-            const owners = res.data.filter(u => u.role === 'StoreOwner');
+            // Fetch analytics
+            const analyticsRes = await api.get('/admin/dashboard');
+            setAnalytics(analyticsRes.data);
+            
+            // Fetch users to filter for store owners
+            const usersRes = await api.get('/admin/users');
+            const owners = usersRes.data.filter(u => u.role === 'StoreOwner');
             setOwnerOptions(owners);
+
+            // Fetch all stores for the rating dropdown
+            const storesRes = await api.get('/admin/stores');
+            setStores(storesRes.data);
+
         } catch (err) {
-            console.error('Failed to fetch owners', err);
+            console.error("Error fetching admin data:", err);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        const fetchAnalytics = async () => {
-            try {
-                const res = await api.get('/admin/dashboard');
-                setAnalytics(res.data);
-                // fetch owners for create store select
-                await fetchOwners();
-            } catch (err) {
-                console.error("Error fetching analytics:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAnalytics();
+        fetchAdminData();
     }, []);
+
+    const handleRatingSubmit = async () => {
+        if (!newRating.storeId || !newRating.rating) {
+            setMessage("Please select a store and a rating.");
+            return;
+        }
+        try {
+            await api.post(`/ratings/rate/${newRating.storeId}`, { rating: newRating.rating });
+            setMessage('Rating submitted successfully!');
+            // Refresh analytics to show updated total ratings
+            const analyticsRes = await api.get('/admin/dashboard');
+            setAnalytics(analyticsRes.data);
+            setNewRating({ storeId: '', rating: '' });
+        } catch (err) {
+            console.error('Failed to submit rating', err);
+            setMessage(err.response?.data?.message || 'Failed to submit rating.');
+        }
+    };
 
     if (loading) return <div className="text-center mt-5">Loading Admin Dashboard...</div>;
 
@@ -140,6 +159,45 @@ const AdminDashboard = () => {
             </div>
 
             <UserStoreTable type="stores" />
+
+            <h2 className="mt-5 mb-3 text-secondary">Rate a Store</h2>
+            {/* Rate a Store Form */}
+            <div className="card p-3 mb-4">
+                <h5>Submit a new rating</h5>
+                <div className="row g-2">
+                    <div className="col-md-8">
+                        <select 
+                            className="form-control" 
+                            value={newRating.storeId} 
+                            onChange={e => setNewRating({ ...newRating, storeId: e.target.value })}
+                        >
+                            <option value="">Select a Store to Rate</option>
+                            {stores.map(store => (
+                                <option key={store.id} value={store.id}>
+                                    {store.name} - {store.address}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-md-4">
+                        <select 
+                            className="form-control" 
+                            value={newRating.rating}
+                            onChange={e => setNewRating({ ...newRating, rating: e.target.value })}
+                        >
+                            <option value="">Select Rating</option>
+                            {[1, 2, 3, 4, 5].map(rate => (
+                                <option key={rate} value={rate}>{rate} Star{rate > 1 && 's'}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="col-12 mt-2">
+                        <button className="btn btn-info" onClick={handleRatingSubmit}>
+                            Submit Rating
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
